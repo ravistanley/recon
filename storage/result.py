@@ -1,0 +1,1 @@
+# For future persistent storage (e.g., SQLite)

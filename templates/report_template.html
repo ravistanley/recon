@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Recon Report - {{ report.target }}</title>
+    <style>
+        body { font-family: monospace; background: #0a0a0a; color: #0f0; margin: 2em; }
+        h1, h2 { color: #0f0; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 2em; }
+        th, td { border: 1px solid #0f0; padding: 8px; text-align: left; }
+        .cve-critical { color: #f00; }
+        .cve-high { color: #f90; }
+        .cve-medium { color: #ff0; }
+        pre { background: #111; padding: 1em; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Reconnaissance Report</h1>
+    <p><strong>Target:</strong> {{ report.target }}</p>
+    <p><strong>Generated:</strong> {{ report.timestamp }}</p>
+
+    <h2>Discovered Services</h2>
+    <table>
+        <tr><th>Port</th><th>Category</th><th>Product</th><th>Version</th><th>Banner</th></tr>
+        {% for svc in report.services %}
+        <tr>
+            <td>{{ svc.port }}</td>
+            <td>{{ svc.category.value }}</td>
+            <td>{{ svc.product }}</td>
+            <td>{{ svc.version }}</td>
+            <td>{{ svc.banner|default("", true) }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h2>CVEs Found</h2>
+    <ul>
+    {% for cve in report.cves %}
+        <li class="cve-{{ cve.severity.lower() }}"><strong>{{ cve.id }}</strong> (CVSS {{ cve.cvss_score }}) – {{ cve.description }}</li>
+    {% endfor %}
+    </ul>
+
+    <h2>Plugin Outputs</h2>
+    {% for name, output in report.plugin_outputs.items() %}
+    <h3>{{ name }}</h3>
+    <pre>{{ output }}</pre>
+    {% endfor %}
+</body>
+</html>
