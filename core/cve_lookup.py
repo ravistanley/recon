@@ -4,6 +4,8 @@ from models.cve import CVERecord
 from config.settings import NVD_API_KEY
 
 async def lookup_cves_for_service(cpe: str, session: aiohttp.ClientSession) -> list[CVERecord]:
+    if not cpe:
+        return []
     cached = await get_cache("cve", cpe)
     if cached is not None:
         return [CVERecord(**c) for c in cached]
@@ -12,6 +14,7 @@ async def lookup_cves_for_service(cpe: str, session: aiohttp.ClientSession) -> l
     params = {"cpeName": cpe, "resultsPerPage": 20}
     if NVD_API_KEY:
         params["apiKey"] = NVD_API_KEY
+
     async with session.get(url, params=params) as resp:
         if resp.status != 200:
             return []
@@ -26,7 +29,7 @@ async def lookup_cves_for_service(cpe: str, session: aiohttp.ClientSession) -> l
             id=cve.get("id", ""),
             cvss_score=cvssv3.get("baseScore", 0.0),
             severity=cvssv3.get("baseSeverity", "UNKNOWN"),
-            description=cve.get("descriptions", [{}])[0].get("value", "")[:200],
+            description=cve.get("descriptions", [{}])[0].get("value", "")[:300],
         ))
     await set_cache("cve", cpe, [c.dict() for c in cves])
     return cves

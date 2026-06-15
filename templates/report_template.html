@@ -1,16 +1,109 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>Recon Report - {{ report.target }}</title>
     <style>
-        body { font-family: monospace; background: #0a0a0a; color: #0f0; margin: 2em; }
-        h1, h2 { color: #0f0; }
-        table { border-collapse: collapse; width: 100%; margin-bottom: 2em; }
-        th, td { border: 1px solid #0f0; padding: 8px; text-align: left; }
-        .cve-critical { color: #f00; }
-        .cve-high { color: #f90; }
-        .cve-medium { color: #ff0; }
-        pre { background: #111; padding: 1em; overflow-x: auto; }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 2rem;
+            line-height: 1.5;
+        }
+        h1, h2, h3 {
+            color: #0f0;
+            border-bottom: 1px solid #2a2a2a;
+            padding-bottom: 0.3em;
+        }
+        h1 { font-size: 2rem; }
+        h2 { font-size: 1.5rem; margin-top: 2rem; }
+        h3 { font-size: 1.2rem; margin-top: 1.5rem; }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1rem 0;
+            background: #111;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            border: 1px solid #2a2a2a;
+            padding: 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+        th {
+            background: #1a1a1a;
+            color: #0f0;
+            font-weight: bold;
+        }
+        tr:nth-child(even) { background: #0e0e0e; }
+        .banner {
+            background: #1e1e1e;
+            padding: 0.5rem;
+            border-left: 4px solid #0f0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .cve-critical { color: #ff4444; font-weight: bold; }
+        .cve-high { color: #ff8844; font-weight: bold; }
+        .cve-medium { color: #ffcc44; }
+        .cve-low { color: #88ff88; }
+        details {
+            background: #111;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            margin: 1rem 0;
+            padding: 0.5rem 1rem;
+        }
+        summary {
+            cursor: pointer;
+            font-weight: bold;
+            color: #0f0;
+            padding: 0.5rem;
+        }
+        pre {
+            background: #0a0a0a;
+            padding: 1rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            border-left: 3px solid #0f0;
+            font-size: 0.85rem;
+            font-family: 'Courier New', monospace;
+            margin: 0.5rem 0;
+        }
+        .plugin-output {
+            background: #0d0d0d;
+            border-radius: 8px;
+            padding: 0.5rem;
+        }
+        .badge {
+            background: #2a2a2a;
+            border-radius: 12px;
+            padding: 0.2rem 0.6rem;
+            font-size: 0.75rem;
+            color: #0f0;
+            display: inline-block;
+        }
+        footer {
+            margin-top: 3rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #666;
+            border-top: 1px solid #2a2a2a;
+            padding-top: 1rem;
+        }
+        .warning {
+            color: #ff8844;
+        }
     </style>
 </head>
 <body>
@@ -20,29 +113,90 @@
 
     <h2>Discovered Services</h2>
     <table>
-        <tr><th>Port</th><th>Category</th><th>Product</th><th>Version</th><th>Banner</th></tr>
+        <thead>
+            <tr><th>Port</th><th>Category</th><th>Product</th><th>Version</th><th>Banner (preview)</th></tr>
+        </thead>
+        <tbody>
         {% for svc in report.services %}
         <tr>
             <td>{{ svc.port }}</td>
-            <td>{{ svc.category.value }}</td>
-            <td>{{ svc.product }}</td>
-            <td>{{ svc.version }}</td>
-            <td>{{ svc.banner|default("", true) }}</td>
-        </tr>
+            <td>
+                {% if svc.category.value == 'http' %}HTTP
+                {% elif svc.category.value == 'https' %}HTTPS
+                {% elif svc.category.value == 'ssh' %}SSH
+                {% elif svc.category.value == 'ftp' %}FTP
+                {% else %}{{ svc.category.value }}
+                {% endif %}
+              </td>
+            <td>{{ svc.product if svc.product else '-' }}</td>
+            <td>{{ svc.version if svc.version else '-' }}</td>
+            <td>
+                {% if svc.banner %}
+                <details>
+                    <summary>Show banner</summary>
+                    <div class="banner">{{ svc.banner | e }}</div>
+                </details>
+                {% else %}
+                <span class="badge">No banner</span>
+                {% endif %}
+              </td>
+          </tr>
         {% endfor %}
+        </tbody>
     </table>
 
     <h2>CVEs Found</h2>
+    {% if report.cves %}
     <ul>
     {% for cve in report.cves %}
-        <li class="cve-{{ cve.severity.lower() }}"><strong>{{ cve.id }}</strong> (CVSS {{ cve.cvss_score }}) – {{ cve.description }}</li>
+        <li class="cve-{{ cve.severity.lower() }}">
+            <strong>{{ cve.id }}</strong> (CVSS {{ cve.cvss_score }}) – <span class="cve-{{ cve.severity.lower() }}">{{ cve.severity }}</span>
+            <br><small>{{ cve.description }}</small>
+        </li>
     {% endfor %}
     </ul>
+    {% else %}
+    <p>No CVEs found.</p>
+    {% endif %}
 
     <h2>Plugin Outputs</h2>
-    {% for name, output in report.plugin_outputs.items() %}
-    <h3>{{ name }}</h3>
-    <pre>{{ output }}</pre>
+    {% for name, output in plugin_outputs.items() %}
+    <details class="plugin-output">
+        <summary>{{ name | upper }}</summary>
+        <div>
+            {% if name == 'gobuster' %}
+                {% if output is mapping %}
+                    {% for port, out in output.items() %}
+                        <h4>Port {{ port }}</h4>
+                        <pre>{{ out }}</pre>
+                    {% endfor %}
+                {% else %}
+                    <pre>{{ output }}</pre>
+                {% endif %}
+            {% elif name == 'nikto' %}
+                {% if 'Timeout' in output %}
+                    <div class="warning">[!] {{ output }}</div>
+                {% else %}
+                    <pre>{{ output }}</pre>
+                {% endif %}
+            {% elif name == 'nse' %}
+                {% if output is mapping %}
+                    {% for key, val in output.items() %}
+                        <h4>Script: {{ key }}</h4>
+                        <pre>{{ val }}</pre>
+                    {% endfor %}
+                {% else %}
+                    <pre>{{ output }}</pre>
+                {% endif %}
+            {% else %}
+                <pre>{{ output }}</pre>
+            {% endif %}
+        </div>
+    </details>
     {% endfor %}
+
+    <footer>
+        HOLLOW Recon Framework - Automated intelligence gathering
+    </footer>
 </body>
 </html>

@@ -22,8 +22,5 @@ class Loot:
     def save_banner(self, port: int, banner: str):
         (self.raw / f"banner_{port}.txt").write_text(banner)
 
-    def save_screenshot(self, name: str, png_bytes: bytes):
-        (self.screenshots / f"{name}.png").write_bytes(png_bytes)
-
     def save_raw(self, filename: str, content: str):
         (self.raw / filename).write_text(content)

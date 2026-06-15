@@ -6,7 +6,7 @@ from config.settings import WORDLIST_ROOTS, CACHE_DIR
 class WordlistRegistry:
     def __init__(self):
         self.cache_file = CACHE_DIR / "wordlist_index.json"
-        self.lists = {}  # category -> list of paths
+        self.lists = {}
         self._load_or_scan()
 
     def _load_or_scan(self):
@@ -32,18 +32,16 @@ class WordlistRegistry:
             self.lists.setdefault("dir", []).append(str(filepath))
         if "subdomain" in name or "vhost" in name:
             self.lists.setdefault("vhost", []).append(str(filepath))
-        if "api" in name or "endpoint" in name:
+        if "api" in name:
             self.lists.setdefault("api", []).append(str(filepath))
         if "param" in name:
             self.lists.setdefault("param", []).append(str(filepath))
         if "rockyou" in name or "password" in name:
             self.lists.setdefault("password", []).append(str(filepath))
-        # fallback
         self.lists.setdefault("fallback", []).append(str(filepath))
 
     def get_best(self, category: str) -> str | None:
         candidates = self.lists.get(category, []) or self.lists.get("fallback", [])
         if not candidates:
             return None
-        # return largest file
         return max(candidates, key=lambda p: os.path.getsize(p))

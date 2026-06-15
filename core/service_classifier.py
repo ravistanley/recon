@@ -4,9 +4,11 @@ def classify_service(port: int, nmap_info: dict, banner: str | None, ssl_detecte
     product = nmap_info.get("product", "").lower()
     name = nmap_info.get("name", "").lower()
 
-    category = ServiceCategory.UNKNOWN
-    if port in [80, 8080, 8000, 8888] or "http" in name:
+    is_http_banner = banner and ("HTTP/" in banner or "html" in banner.lower() or "Content-Type" in banner)
+    if is_http_banner:
         category = ServiceCategory.HTTPS if ssl_detected else ServiceCategory.HTTP
+    elif port in [80, 443, 8080, 8443, 3000, 5000, 8000, 8008, 8888, 9000]:
+        category = ServiceCategory.HTTPS if (ssl_detected or port == 443) else ServiceCategory.HTTP
     elif port == 22 or "ssh" in name:
         category = ServiceCategory.SSH
     elif port == 21 or "ftp" in name:
@@ -15,19 +17,18 @@ def classify_service(port: int, nmap_info: dict, banner: str | None, ssl_detecte
         category = ServiceCategory.SMB
     elif port == 25 or "smtp" in name:
         category = ServiceCategory.SMTP
-    elif port == 3306 or "mysql" in name:
-        category = ServiceCategory.MYSQL
-    elif port == 5432 or "postgres" in name:
-        category = ServiceCategory.POSTGRES
-    elif port == 3389 or "rdp" in name:
-        category = ServiceCategory.RDP
+    else:
+        category = ServiceCategory.UNKNOWN
+
+    if "http" in name or "nginx" in product or "apache" in product or "next" in product:
+        category = ServiceCategory.HTTPS if ssl_detected else ServiceCategory.HTTP
 
     return ServiceIdentity(
         port=port,
         category=category,
         product=nmap_info.get("product", ""),
         version=nmap_info.get("version", ""),
-        cpe=nmap_info.get("cpe"),
+        cpe=nmap_info.get("cpe", ""),
         is_ssl=ssl_detected,
         banner=banner,
     )

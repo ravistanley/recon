@@ -5,7 +5,7 @@ from models.service import ServiceCategory
 
 class NSEPlugin(ReconPlugin):
     name = "nse"
-    dependencies = ["service_classifier"]  # will be satisfied by orchestrator
+    dependencies = ["service_classifier"]
 
     async def run(self, target: str, scan_data: dict, session):
         services = scan_data.get("classified_services", [])

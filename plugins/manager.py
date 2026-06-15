@@ -1,6 +1,5 @@
 import importlib
 import pkgutil
-from pathlib import Path
 from plugins.base import ReconPlugin
 
 class PluginManager:
@@ -10,7 +9,7 @@ class PluginManager:
 
     def _load_plugins(self, plugin_dir):
         for module_info in pkgutil.iter_modules([plugin_dir]):
-            if module_info.name == "base" or module_info.name == "manager":
+            if module_info.name in ("base", "manager"):
                 continue
             module = importlib.import_module(f"{plugin_dir}.{module_info.name}")
             for attr in dir(module):
@@ -20,7 +19,6 @@ class PluginManager:
                     self.plugins[inst.name] = inst
 
     def resolve_dependencies(self):
-        # Topological sort
         order = []
         remaining = set(self.plugins.keys())
         while remaining:
@@ -32,7 +30,6 @@ class PluginManager:
                     remaining.remove(name)
                     progress = True
             if not progress:
-                # Cyclic or missing deps – append remaining unsorted
                 order.extend(remaining)
                 break
         self.execution_order = order
@@ -41,5 +38,9 @@ class PluginManager:
         results = {}
         for name in self.execution_order:
             plugin = self.plugins[name]
-            results[name] = await plugin.run(target, scan_data, session)
+            try:
+                results[name] = await plugin.run(target, scan_data, session)
+            except Exception as e:
+                print(f"[!] Plugin '{name}' failed: {e}")
+                results[name] = {"error": str(e)}
         return results
